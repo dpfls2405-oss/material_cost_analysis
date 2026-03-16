@@ -13,6 +13,12 @@ from helpers import to_number, pct_to_float, normalize_text
 
 # ── 입고실적 ─────────────────────────────────────────────────
 def standardize_receipt(df: pd.DataFrame, month: str, source_file_name: str) -> pd.DataFrame:
+    # Total/합계 행 제거
+    df = df.copy()
+    if "번호" in df.columns:
+        df = df[~df["번호"].astype(str).str.strip().str.lower().isin(["total", "합계", "소계"])]
+        df = df.reset_index(drop=True)
+
     if "색상" in df.columns:
         product_id = normalize_text(df["단품코드"]).fillna("") + normalize_text(df["색상"]).fillna("")
     else:
@@ -128,6 +134,14 @@ def standardize_bom(df: pd.DataFrame, month: str, source_file_name: str) -> pd.D
 
 # ── 구매 ─────────────────────────────────────────────────────
 def standardize_purchase(df: pd.DataFrame, month: str, source_file_name: str) -> pd.DataFrame:
+    # Total/합계 행 제거 (거래처명이 'Total' 이거나 번호가 NaN인 합계행)
+    df = df.copy()
+    if "거래처명" in df.columns:
+        df = df[~df["거래처명"].astype(str).str.strip().str.lower().isin(["total", "합계", "소계"])]
+    if "번호" in df.columns:
+        df = df[df["번호"].notna() | df["자재명"].notna()]
+    df = df.reset_index(drop=True)
+
     mat_code = normalize_text(df["자재코드"])
     if "색상" in df.columns:
         color = normalize_text(df["색상"])
